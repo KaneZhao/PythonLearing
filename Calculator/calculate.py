@@ -1,6 +1,88 @@
 from tkinter import *
 import tkinter.messagebox as messagebox
 
+
+class Cal:
+    # 获取表达式的优先级
+    def getPriority(self, s):
+        if s == "(":
+            return 0
+        elif s == "+" or s == "-":
+            return 1
+        elif s == "x" or s == "/":
+            return 2
+        else:
+            return 3
+   
+    # 将输入的字符串转换为表达式
+    def getExpression(self, input):
+        expression = []
+        str = ""
+        for c in input:
+            if c in "+-x/()":
+                if str:
+                    expression.append(str)
+                    str = ""
+                expression.append(c)
+            else:
+                str += c
+        if str:
+            expression.append(str)
+        return expression
+    
+    # 得到逆波兰表达式
+    def postExpression(self, expression):
+        post = []
+        stack = []
+        for c in expression:
+            if c == "(":
+                stack.append(c)
+            elif c == ")":
+                while stack[-1] != "(":
+                    post.append(stack.pop())
+                stack.pop()
+            else:
+                if c not in "+-x/":
+                    stack.append(c)
+                else:
+                    while stack and self.getPriority(stack[-1]) >= self.getPriority(c):
+                        post.append(stack.pop())
+                    stack.append(c)
+        while stack:
+            post.append(stack.pop())
+        return post
+    
+    # 逆波兰表达式求值
+    def evaluateExpression(self, input):
+        expression = self.getExpression(input)
+        post = self.postExpression(expression)
+        stack = []
+        for c in post:
+            if c in "+-x/":
+                num = 0
+                x = int(stack.pop())
+                y = int(stack.pop())
+                if c == "+":
+                    num = y + x
+                elif c == "-":
+                    num = y - x
+                elif c == "x":
+                    num = y*x
+                else:
+                    if x == 0:
+                        return 0
+                    else:
+                        num = y//x
+                stack.append(str(num))
+            else:
+                stack.append(c)
+        if stack:
+            return stack.pop()
+        else:
+            return 0
+
+
+'''   
 class Buffer(object):
     def __init__(self, data):
         self.data = data
@@ -135,8 +217,6 @@ def operate(string):
     node = parse(tokens)
     return evaluate(node)
 
-
-'''
 if __name__ == '__main__':
     input = input('Input:')
     tokens = tokenize(input)
@@ -145,119 +225,118 @@ if __name__ == '__main__':
 '''
 
 
-class Application(Frame):
-    res = "1+2"
+class Application(Frame, Cal):
     def __init__(self, master=None):
         Frame.__init__(self, master)
         self.pack()
         self.createWidgets()
-
-
+    
+    # 页面布局
     def createWidgets(self):
-        self.stringInput = Entry(self)
+        # 文本框
+        self.stringInput = Entry(self, width=25)
         self.stringInput.grid(row=0, column=0, columnspan=4)
-
-        self.alertButton = Button(self, text=' 7 ', command=self.putStringSeven)
+        # Button
+        self.alertButton = Button(self, text='CE', width=5, height=2, command=self.clearInput)
         self.alertButton.grid(row=1, column=0)
-        
-        self.alertButton1 = Button(self, text=' 8 ', command=self.putStringEight)
-        self.alertButton1.grid(row=1, column=1)
-        
-        self.alertButton2 = Button(self, text=' 9 ', command=self.putStringNine)
-        self.alertButton2.grid(row=1, column=2)
-        
-        self.alertButton3 = Button(self, text=' x ', command=self.putStringMUL)
-        self.alertButton3.grid(row=1, column=3)
-        
-        self.alertButton4 = Button(self, text=' 4 ', command=self.putStringFour)
-        self.alertButton4.grid(row=2, column=0)
-        
-        self.alertButton5 = Button(self, text=' 5 ', command=self.putStringFive)
-        self.alertButton5.grid(row=2, column=1)
-        
-        self.alertButton6 = Button(self, text=' 6 ', command=self.putStringSix)
-        self.alertButton6.grid(row=2, column=2)
-        
-        self.alertButton7 = Button(self, text=' - ', command=self.putStringSUB)
-        self.alertButton7.grid(row=2, column=3)
-        
-        self.alertButton8 = Button(self, text=' 1 ', command=self.putStringOne)
-        self.alertButton8.grid(row=3, column=0)
-        
-        self.alertButton9 = Button(self, text=' 2 ', command=self.putStringTwo)
-        self.alertButton9.grid(row=3, column=1)
 
-        self.alertButton10 = Button(self, text=' 3 ', command=self.putStringThree)
-        self.alertButton10.grid(row=3, column=2)
-        
-        self.alertButton11 = Button(self, text=' + ', command=self.putStringADD)
-        self.alertButton11.grid(row=3, column=3)
-        
-        self.alertButton12 = Button(self, text=' 0 ', command=self.putStringZero)
-        self.alertButton12.grid(row=4, column=0)
-        
-        self.alertButton13 = Button(self, text=' ( ', command=self.putStringLeft)
-        self.alertButton13.grid(row=4, column=1)
+        self.alertButton = Button(self, text='C', width=5, height=2, command=self.clearInput)
+        self.alertButton.grid(row=1, column=1)
 
-        self.alertButton14 = Button(self, text=' ) ', command=self.putStringRight)
-        self.alertButton14.grid(row=4, column=2)
-        
-        self.alertButton15 = Button(self, text=' = ', command=self.getResult)
-        self.alertButton15.grid(row=4, column=3)
+        self.alertButton = Button(self, text='<-', width=5, height=2, command=self.backupInput)
+        self.alertButton.grid(row=1, column=2)
 
+        self.alertButton = Button(self, text='/', width=5, height=2, command=lambda: self.handlerOpe(str='/'))
+        self.alertButton.grid(row=1, column=3)
+
+        self.alertButton = Button(self, text='7', width=5, height=2, command=lambda: self.handlerNum(str='7'))
+        self.alertButton.grid(row=2, column=0)
+        
+        self.alertButton1 = Button(self, text='8', width=5, height=2, command=lambda: self.handlerNum(str='8'))
+        self.alertButton1.grid(row=2, column=1)
+        
+        self.alertButton2 = Button(self, text='9', width=5, height=2, command=lambda: self.handlerNum(str='9'))
+        self.alertButton2.grid(row=2, column=2)
+        
+        self.alertButton3 = Button(self, text='x', width=5, height=2,  command=lambda: self.handlerOpe(str='x'))
+        self.alertButton3.grid(row=2, column=3)
+        
+        self.alertButton4 = Button(self, text='4', width=5, height=2, command=lambda: self.handlerNum(str='4'))
+        self.alertButton4.grid(row=3, column=0)
+        
+        self.alertButton5 = Button(self, text='5', width=5, height=2, command=lambda: self.handlerNum(str='5'))
+        self.alertButton5.grid(row=3, column=1)
+        
+        self.alertButton6 = Button(self, text='6', width=5, height=2, command=lambda: self.handlerNum(str='6'))
+        self.alertButton6.grid(row=3, column=2)
+        
+        self.alertButton7 = Button(self, text='-', width=5, height=2, command=lambda: self.handlerOpe(str='-'))
+        self.alertButton7.grid(row=3, column=3)
+        
+        self.alertButton8 = Button(self, text='1', width=5, height=2, command=lambda: self.handlerNum(str='1'))
+        self.alertButton8.grid(row=4, column=0)
+        
+        self.alertButton9 = Button(self, text='2', width=5, height=2, command=lambda: self.handlerNum(str='2'))
+        self.alertButton9.grid(row=4, column=1)
+
+        self.alertButton10 = Button(self, text='3', width=5, height=2, command=lambda: self.handlerNum(str='3'))
+        self.alertButton10.grid(row=4, column=2)
+        
+        self.alertButton11 = Button(self, text='+', width=5, height=2, command=lambda: self.handlerOpe(str='+'))
+        self.alertButton11.grid(row=4, column=3)
+        
+        self.alertButton12 = Button(self, text='0', width=5, height=2, command=lambda: self.handlerNum(str='0'))
+        self.alertButton12.grid(row=5, column=0)
+        
+        self.alertButton13 = Button(self, text='(', width=5, height=2, command=lambda: self.handler(str='('))
+        self.alertButton13.grid(row=5, column=1)
+
+        self.alertButton14 = Button(self, text=')', width=5, height=2, command=lambda: self.handler(str=')'))
+        self.alertButton14.grid(row=5, column=2)
+        
+        self.alertButton15 = Button(self, text='=', width=5, height=2, command=self.getResult)
+        self.alertButton15.grid(row=5, column=3)
+    # 相应函数
+
+    # 获取文本框的字符串,计算表达式的值，清空文本框，显示结果，并修改flag的值
     def getResult(self):
-        result = self.stringInput.get()
-        messagebox.showinfo('Results', operate(result))
-
-    def putStringSeven(self):
-        self.stringInput.insert('insert', '7')
-
-    def putStringEight(self):
-        self.stringInput.insert('insert', '8')
-
-    def putStringNine(self):
-        self.stringInput.insert('insert', '9')
-
-    def putStringMUL(self):
-        self.stringInput.insert('insert', 'x')
+        x = Cal()
+        if self.flag == 0:
+            result = self.stringInput.get()
+            self.stringInput.delete(0, END)
+            message = x.evaluateExpression(result)
+            self.flag = 1
+            self.stringInput.insert('insert', message)
     
-    def putStringFour(self):
-        self.stringInput.insert('insert', '4')
-
-    def putStringFive(self):
-        self.stringInput.insert('insert', '5')
-
-    def putStringSix(self):
-        self.stringInput.insert('insert', '6')
-
-    def putStringSUB(self):
-        self.stringInput.insert('insert', '-')
+    # EC和C键清空文本框
+    def clearInput(self):
+        self.stringInput.delete(0, END)
     
-    def putStringOne(self):
-        self.stringInput.insert('insert', '1')
+    # 回退一位
+    def backupInput(self):
+        if self.stringInput.get():
+            size = len(self.stringInput.get())
+            self.stringInput.delete(size-1, END)
+    
+    # 不同数字和括号按键在文本框输出
+    def handlerNum(self, str):
+        if self.flag == 1:
+            self.stringInput.delete(0, END)
+            self.flag = 0
+        self.stringInput.insert('insert', str)
+    
+    # 不同的运算符按键在文本框输出
+    def handlerOpe(self, str):
+        self.flag = 0
+        self.stringInput.insert('insert', str)
 
-    def putStringTwo(self):
-        self.stringInput.insert('insert', '2')
-
-    def putStringThree(self):
-        self.stringInput.insert('insert', '3')
-
-    def putStringADD(self):
-        self.stringInput.insert('insert', '+')
-
-    def putStringZero(self):
-        self.stringInput.insert('insert', '0')
-
-    def putStringLeft(self):
-        self.stringInput.insert('insert', '(')
-
-    def putStringRight(self):
-        self.stringInput.insert('insert', ')')
+    # 是否已经显示出结果
+    flag = 0
 
 
 app = Application()
 # 设置窗口标题:
 app.master.title('Calculator')
-app.master.geometry('300x200')
+app.master.geometry('400x300')
 # 主消息循环:
 app.mainloop()
